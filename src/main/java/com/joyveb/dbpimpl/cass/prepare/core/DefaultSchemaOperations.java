@@ -23,9 +23,9 @@ import java.util.List;
 import org.springframework.data.mapping.model.MappingException;
 import org.springframework.util.Assert;
 
-import com.datastax.driver.core.Query;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TableMetadata;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -39,7 +39,7 @@ import com.joyveb.dbpimpl.cass.prepare.generator.DropTableCqlGenerator;
 import com.joyveb.dbpimpl.cass.prepare.mapping.CassandraPersistentEntity;
 import com.joyveb.dbpimpl.cass.prepare.schema.DefaultIngestOperation;
 import com.joyveb.dbpimpl.cass.prepare.schema.DefaultSchemaCqlOperations;
-import com.joyveb.dbpimpl.cass.prepare.schema.DefaultUpdateOperation;
+import com.joyveb.dbpimpl.cass.prepare.schema.DefaultSchemaUpdateOperation;
 import com.joyveb.dbpimpl.cass.prepare.schema.IngestOperation;
 import com.joyveb.dbpimpl.cass.prepare.schema.UpdateOperation;
 import com.joyveb.dbpimpl.cass.prepare.spec.AlterTableSpecification;
@@ -76,7 +76,7 @@ public class DefaultSchemaOperations implements SchemaOperations {
 		spec.name(tableName);
 		CreateTableCqlGenerator generator = new CreateTableCqlGenerator(spec);
 		String cql = generator.toCql();
-		return new DefaultUpdateOperation(session, cql);
+		return new DefaultSchemaUpdateOperation(session, cql);
 
 	}
 
@@ -88,7 +88,7 @@ public class DefaultSchemaOperations implements SchemaOperations {
 
 		String cql = alterTableCql(tableName, entityClass, dropRemovedAttributeColumns);
 		if (cql != null) {
-			return Optional.<UpdateOperation> of(new DefaultUpdateOperation(session, cql));
+			return Optional.<UpdateOperation> of(new DefaultSchemaUpdateOperation(session, cql));
 		} else {
 			return Optional.absent();
 		}
@@ -132,7 +132,7 @@ public class DefaultSchemaOperations implements SchemaOperations {
 	public UpdateOperation dropTable(String tableName) {
 		DropTableSpecification spec = new DropTableSpecification().name(tableName);
 		String cql = new DropTableCqlGenerator(spec).toCql();
-		return new DefaultUpdateOperation(session, cql);
+		return new DefaultSchemaUpdateOperation(session, cql);
 
 	}
 
@@ -141,10 +141,10 @@ public class DefaultSchemaOperations implements SchemaOperations {
 		Assert.notNull(entityClass);
 		CassandraPersistentEntity<?> entity = this.getPersistentEntity(entityClass);
 		List<CreateIndexSpecification> specList = converter.getCreateIndexSpecifications(entity);
-		Iterator<Query> queryIterator = Iterators.transform(specList.iterator(),
-				new Function<CreateIndexSpecification, Query>() {
+		Iterator<Statement> queryIterator = Iterators.transform(specList.iterator(),
+				new Function<CreateIndexSpecification, Statement>() {
 					@Override
-					public Query apply(CreateIndexSpecification spec) {
+					public Statement apply(CreateIndexSpecification spec) {
 						String cql = new CreateIndexCqlGenerator(spec).toCql();
 						return new SimpleStatement(cql);
 					}
@@ -160,10 +160,10 @@ public class DefaultSchemaOperations implements SchemaOperations {
 
 		List<String> cqlList = alterIndexesCql(tableName, entityClass);
 
-		Iterator<Query> queryIterator = Iterators.transform(cqlList.iterator(), new Function<String, Query>() {
+		Iterator<Statement> queryIterator = Iterators.transform(cqlList.iterator(), new Function<String, Statement>() {
 
 			@Override
-			public Query apply(String cql) {
+			public Statement apply(String cql) {
 				return new SimpleStatement(cql);
 			}
 

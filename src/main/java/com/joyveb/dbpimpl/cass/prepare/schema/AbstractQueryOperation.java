@@ -22,10 +22,10 @@ import java.util.concurrent.Executor;
 
 import org.springframework.util.Assert;
 
-import com.datastax.driver.core.Query;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.util.concurrent.Futures;
@@ -87,7 +87,7 @@ public abstract class AbstractQueryOperation<T, O extends QueryOperation<T, O>> 
 		return (O) this;
 	}
 
-	protected void addQueryOptions(Query query) {
+	protected void addQueryOptions(Statement query) {
 		/*
 		 * Add Query Options
 		 */
@@ -106,16 +106,16 @@ public abstract class AbstractQueryOperation<T, O extends QueryOperation<T, O>> 
 		}
 	}
 
-	protected Query doCreateQuery(QueryCreator qc) {
-		return qc.createQuery();
+	protected Statement doCreateStatement(StatementCreator qc) {
+		return qc.createStatement();
 	}
 
-	protected ResultSet doExecute(Query query) {
+	protected ResultSet doExecute(Statement query) {
 		addQueryOptions(query);
 		return session.execute(query);
 	}
 	
-	protected CassandraFuture<ResultSet> doExecuteAsync(Query query) {
+	protected CassandraFuture<ResultSet> doExecuteAsync(Statement query) {
 		addQueryOptions(query);
 		ResultSetFuture resultSetFuture = session.executeAsync(query);
 		CassandraFuture<ResultSet> wrappedFuture = new CassandraFuture<ResultSet>(resultSetFuture,
@@ -131,11 +131,11 @@ public abstract class AbstractQueryOperation<T, O extends QueryOperation<T, O>> 
 	 * Parallel execution
 	 */
 
-	protected List<ResultSet> doExecute(Iterator<Query> queryIterator) {
+	protected List<ResultSet> doExecute(Iterator<Statement> queryIterator) {
 		return doExecuteAsync(queryIterator).getUninterruptibly();
 	}
 
-	protected CassandraFuture<List<ResultSet>> doExecuteAsync(Iterator<Query> queryIterator) {
+	protected CassandraFuture<List<ResultSet>> doExecuteAsync(Iterator<Statement> queryIterator) {
 
 		if (!queryIterator.hasNext()) {
 			ListenableFuture<List<ResultSet>> emptyResultFuture = Futures
@@ -145,10 +145,10 @@ public abstract class AbstractQueryOperation<T, O extends QueryOperation<T, O>> 
 			return wrappedFuture;
 		}
 		final Iterator<ListenableFuture<ResultSet>> resultSetFutures = Iterators.transform(queryIterator,
-				new Function<Query, ListenableFuture<ResultSet>>() {
+				new Function<Statement, ListenableFuture<ResultSet>>() {
 
 					@Override
-					public ListenableFuture<ResultSet> apply(Query query) {
+					public ListenableFuture<ResultSet> apply(Statement query) {
 						return doExecuteAsync(query);
 					}
 

@@ -15,7 +15,7 @@
  */
 package com.joyveb.dbpimpl.cass.prepare.schema;
 
-import com.datastax.driver.core.Query;
+import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.SimpleStatement;
 
 /**
@@ -25,43 +25,43 @@ import com.datastax.driver.core.SimpleStatement;
  * 
  */
 
-public class SimpleQueryCreator implements QueryCreator {
+public class SimpleStatementCreator implements StatementCreator {
 
-	private final Query statement;
+	private final RegularStatement statement;
 
-	public SimpleQueryCreator(String cql) {
+	public SimpleStatementCreator(String cql) {
 		statement = new SimpleStatement(cql);
 	}
 
-	public SimpleQueryCreator(Query query) {
+	public SimpleStatementCreator(RegularStatement query) {
 		statement = query;
 	}
 
-	public SimpleQueryCreator withConsistencyLevel(ConsistencyLevel consistency) {
+	public SimpleStatementCreator withConsistencyLevel(ConsistencyLevel consistency) {
 		if (consistency != null) {
 			statement.setConsistencyLevel(ConsistencyLevelResolver.resolve(consistency));
 		}
 		return this;
 	}
 
-	public SimpleQueryCreator withRetryPolicy(RetryPolicy retryPolicy) {
+	public SimpleStatementCreator withRetryPolicy(RetryPolicy retryPolicy) {
 		if (retryPolicy != null) {
 			statement.setRetryPolicy(RetryPolicyResolver.resolve(retryPolicy));
 		}
 		return this;
 	}
 
-	public SimpleQueryCreator enableTracing() {
+	public SimpleStatementCreator enableTracing() {
 		statement.enableTracing();
 		return this;
 	}
 
-	public SimpleQueryCreator disableTracing() {
+	public SimpleStatementCreator disableTracing() {
 		statement.disableTracing();
 		return this;
 	}
 
-	public SimpleQueryCreator withQueryTracing(Boolean queryTracing) {
+	public SimpleStatementCreator withQueryTracing(Boolean queryTracing) {
 		if (queryTracing != null) {
 			if (queryTracing.booleanValue()) {
 				statement.enableTracing();
@@ -73,7 +73,7 @@ public class SimpleQueryCreator implements QueryCreator {
 	}
 
 	@Override
-	public Query createQuery() {
+	public RegularStatement createStatement() {
 		return statement;
 	}
 

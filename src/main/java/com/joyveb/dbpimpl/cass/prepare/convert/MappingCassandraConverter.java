@@ -30,10 +30,17 @@ import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.data.convert.EntityInstantiator;
 import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.model.BeanWrapper;
+import org.springframework.data.mapping.model.DefaultSpELExpressionEvaluator;
 import org.springframework.data.mapping.model.MappingException;
+import org.springframework.data.mapping.model.PersistentEntityParameterValueProvider;
+import org.springframework.data.mapping.model.PropertyValueProvider;
+import org.springframework.data.mapping.model.SpELContext;
+import org.springframework.data.util.ClassTypeInformation;
+import org.springframework.data.util.TypeInformation;
 import org.springframework.util.ClassUtils;
 
 import com.datastax.driver.core.ColumnMetadata;
@@ -66,6 +73,7 @@ public class MappingCassandraConverter extends AbstractCassandraConverter implem
 
 	protected final MappingContext<? extends CassandraPersistentEntity<?>, CassandraPersistentProperty> mappingContext;
 	protected ApplicationContext applicationContext;
+	private SpELContext spELContext;
 	private boolean useFieldAccessOnly = true;
 
 	private ClassLoader beanClassLoader;
@@ -79,6 +87,7 @@ public class MappingCassandraConverter extends AbstractCassandraConverter implem
 			MappingContext<? extends CassandraPersistentEntity<?>, CassandraPersistentProperty> mappingContext) {
 		super(new DefaultConversionService());
 		this.mappingContext = mappingContext;
+		this.spELContext = new SpELContext(RowReaderPropertyAccessor.INSTANCE);
 	}
 
 	@Override
@@ -89,6 +98,53 @@ public class MappingCassandraConverter extends AbstractCassandraConverter implem
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.applicationContext = applicationContext;
+		this.spELContext = new SpELContext(this.spELContext, applicationContext);
+	}
+	
+	private class ReadPropertyHandler<S> implements PropertyHandler<CassandraPersistentProperty> {
+
+		private CassandraPersistentEntity<S> entity;
+		private Row row;
+		private PropertyValueProvider<CassandraPersistentProperty> propertyProvider;
+		private BeanWrapper<CassandraPersistentEntity<S>, S> wrapper;
+
+		private ReadPropertyHandler(CassandraPersistentEntity<S> entity, Row row,
+				PropertyValueProvider<CassandraPersistentProperty> propertyProvider,
+				BeanWrapper<CassandraPersistentEntity<S>, S> wrapper) {
+			this.entity = entity;
+			this.row = row;
+			this.propertyProvider = propertyProvider;
+			this.wrapper = wrapper;
+		}
+
+		public void doWithPersistentProperty(CassandraPersistentProperty prop) {
+
+			boolean isConstructorProperty = entity.isConstructorArgument(prop);
+			boolean hasValueForProperty = row.getColumnDefinitions().contains(prop.getColumnName());
+
+			if (prop.hasEmbeddableType()) {
+
+				Class<?> propType = prop.getRawType();
+				final CassandraPersistentEntity<?> propEntity = mappingContext.getPersistentEntity(propType);
+				EntityInstantiator instantiator = instantiators.getInstantiatorFor(propEntity);
+				PersistentEntityParameterValueProvider<CassandraPersistentProperty> parameterProvider = new PersistentEntityParameterValueProvider<CassandraPersistentProperty>(
+						propEntity, propertyProvider, null);
+				Object instance = instantiator.createInstance(propEntity, parameterProvider);
+				final BeanWrapper<CassandraPersistentEntity<Object>, Object> propWrapper = BeanWrapper.create(instance,
+						conversionService);
+				final Object result = propWrapper.getBean();
+
+				propEntity.doWithProperties(new ReadPropertyHandler(propEntity, row, propertyProvider, propWrapper));
+				wrapper.setProperty(prop, result, useFieldAccessOnly);
+			}
+
+			if (!hasValueForProperty || isConstructorProperty) {
+				return;
+			}
+
+			Object obj = propertyProvider.getPropertyValue(prop);
+			wrapper.setProperty(prop, obj, useFieldAccessOnly);
+		}
 	}
 
 	private class InsertPropertyHandler implements PropertyHandler<CassandraPersistentProperty> {
@@ -186,18 +242,14 @@ public class MappingCassandraConverter extends AbstractCassandraConverter implem
 
 	@Override
 	public void write(Object obj, Object builtStatement) {
-
 		if (obj == null) {
 			return;
 		}
-
 		Class<?> beanClassLoaderClass = transformClassToBeanClassLoaderClass(obj.getClass());
 		CassandraPersistentEntity<?> entity = mappingContext.getPersistentEntity(beanClassLoaderClass);
-
 		if (entity == null) {
 			throw new MappingException("No mapping metadata found for " + obj.getClass());
 		}
-
 		if (builtStatement instanceof Insert) {
 			writeInsertInternal(obj, (Insert) builtStatement, entity);
 		} else if (builtStatement instanceof Update) {
@@ -627,7 +679,50 @@ public class MappingCassandraConverter extends AbstractCassandraConverter implem
 
 	@Override
 	public <R> R read(Class<R> type, Object source) {
-		return null;
+		if (source instanceof Row) {
+			return readRow(type, (Row) source);
+		}
+		throw new MappingException("Unknown row object " + source.getClass().getName());
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <R> R readRow(Class<R> clazz, Row row) {
+		Class<R> beanClassLoaderClass = transformClassToBeanClassLoaderClass(clazz);
+		TypeInformation<? extends R> type = ClassTypeInformation.from(beanClassLoaderClass);
+		// TypeInformation<? extends R> typeToUse = typeMapper.readType(row, type);
+		TypeInformation<? extends R> typeToUse = type;
+		Class<? extends R> rawType = typeToUse.getType();
+
+		if (Row.class.isAssignableFrom(rawType)) {
+			return (R) row;
+		}
+		CassandraPersistentEntity<R> persistentEntity = (CassandraPersistentEntity<R>) mappingContext
+				.getPersistentEntity(typeToUse);
+		if (persistentEntity == null) {
+			throw new MappingException("No mapping metadata found for " + rawType.getName());
+		}
+
+		return readRowInternal(persistentEntity, row);
 	}
 
+	private <S extends Object> S readRowInternal(final CassandraPersistentEntity<S> entity, final Row row) {
+
+		final DefaultSpELExpressionEvaluator evaluator = new DefaultSpELExpressionEvaluator(row, spELContext);
+
+		final PropertyValueProvider<CassandraPersistentProperty> propertyProvider = new CassandraPropertyValueProvider(row,
+				evaluator);
+		PersistentEntityParameterValueProvider<CassandraPersistentProperty> parameterProvider = new PersistentEntityParameterValueProvider<CassandraPersistentProperty>(
+				entity, propertyProvider, null);
+
+		EntityInstantiator instantiator = instantiators.getInstantiatorFor(entity);
+		S instance = instantiator.createInstance(entity, parameterProvider);
+
+		final BeanWrapper<CassandraPersistentEntity<S>, S> wrapper = BeanWrapper.create(instance, conversionService);
+		final S result = wrapper.getBean();
+
+		// Set properties not already set in the constructor
+		entity.doWithProperties(new ReadPropertyHandler<S>(entity, row, propertyProvider, wrapper));
+
+		return result;
+	}
 }

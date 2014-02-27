@@ -15,28 +15,38 @@
  */
 package com.joyveb.dbpimpl.cass.prepare.schema;
 
-import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 
 /**
+ * Default update operation implementation
  * 
  * @author Alex Shvid
  * 
- * @param <O> Operation type
  */
-public abstract class AbstractUpdateOperation<O extends QueryOperation<ResultSet, O>> extends
-		AbstractQueryOperation<ResultSet, O> implements StatementCreator, BatchedStatementCreator {
 
-	protected AbstractUpdateOperation(Session session) {
+public class DefaultSchemaUpdateOperation extends AbstractUpdateOperation<UpdateOperation> implements UpdateOperation {
+
+	private final StatementCreator qc;
+
+	public DefaultSchemaUpdateOperation(Session session, String cql) {
+		this(session, new SimpleStatementCreator(cql));
+	}
+
+	public DefaultSchemaUpdateOperation(Session session, StatementCreator qc) {
 		super(session);
+		this.qc = qc;
 	}
 
 	@Override
-	public ResultSet execute() {
-		Statement query = doCreateStatement(this);
-		return doExecute(query);
+	public RegularStatement createStatement() {
+		return qc.createStatement();
 	}
 
+	@Override
+	public void setTableName(String tableName) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

@@ -20,7 +20,6 @@ import java.util.Map;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Query;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -40,7 +39,7 @@ public interface CqlOperations {
 	 * @param qc - QueryCreator interface
 	 * @return
 	 */
-	Query createQuery(QueryCreator qc);
+	Statement createQuery(StatementCreator qc);
 
 	/**
 	 * Executes the supplied CQL Query and returns nothing.
@@ -76,14 +75,14 @@ public interface CqlOperations {
 	 * 
 	 * @param qc The QueryCreator
 	 */
-	ResultSet update(QueryCreator qc);
+	ResultSet update(StatementCreator qc);
 
 	/**
 	 * Executes the supplied CQL Query and returns nothing.
 	 * 
 	 * @param qc The QueryCreator
 	 */
-	UpdateOperation getUpdateOperation(QueryCreator qc);
+	UpdateOperation getUpdateOperation(StatementCreator qc);
 
 	/**
 	 * Executes the supplied CQL Query batch and returns nothing.
@@ -138,7 +137,7 @@ public interface CqlOperations {
 	 * 
 	 * @return ResultSet
 	 */
-	ResultSet select(QueryCreator qc);
+	ResultSet select(StatementCreator qc);
 
 	/**
 	 * Process a ResultSet, trying to convert the first columns of the first Row to Class<T>. This is used internal to the

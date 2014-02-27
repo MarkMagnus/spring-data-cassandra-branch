@@ -20,23 +20,46 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 
 /**
+ * Abstract Get Operation
  * 
  * @author Alex Shvid
  * 
- * @param <O> Operation type
+ * @param <T> - return Type
  */
-public abstract class AbstractUpdateOperation<O extends QueryOperation<ResultSet, O>> extends
-		AbstractQueryOperation<ResultSet, O> implements StatementCreator, BatchedStatementCreator {
+public abstract class AbstractGetOperation<T> extends AbstractQueryOperation<T, GetOperation<T>> implements
+		GetOperation<T>, StatementCreator {
 
-	protected AbstractUpdateOperation(Session session) {
+	private String tableName;
+
+	public abstract T transform(ResultSet resultSet);
+
+	public AbstractGetOperation(Session session) {
 		super(session);
 	}
 
 	@Override
-	public ResultSet execute() {
-		Statement query = doCreateStatement(this);
-		return doExecute(query);
+	public GetOperation<T> formTable(String tableName) {
+		this.tableName = tableName;
+		return this;
 	}
 
+	public String getTableName() {
+		return tableName;
+	}
+
+	@Override
+	public T execute() {
+		Statement query = doCreateStatement(this);
+		ResultSet resultSet = doExecute(query);
+		return transform(resultSet);
+	}
+
+	protected T processWithFallback(ResultSet resultSet) {
+		try {
+			return transform(resultSet);
+		} catch (RuntimeException e) {
+			throw e;
+		}
+	}
 
 }

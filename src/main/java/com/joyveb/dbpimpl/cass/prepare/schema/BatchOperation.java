@@ -16,27 +16,21 @@
 package com.joyveb.dbpimpl.cass.prepare.schema;
 
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 
 /**
+ * Base interface for batch operations
  * 
  * @author Alex Shvid
  * 
- * @param <O> Operation type
  */
-public abstract class AbstractUpdateOperation<O extends QueryOperation<ResultSet, O>> extends
-		AbstractQueryOperation<ResultSet, O> implements StatementCreator, BatchedStatementCreator {
+public interface BatchOperation extends QueryOperation<ResultSet, BatchOperation> {
 
-	protected AbstractUpdateOperation(Session session) {
-		super(session);
-	}
-
-	@Override
-	public ResultSet execute() {
-		Statement query = doCreateStatement(this);
-		return doExecute(query);
-	}
-
+	/**
+	 * Specifies table differ from entitie's table to make batch operations
+	 * 
+	 * @param tableName table name
+	 * @return this
+	 */
+	BatchOperation inTable(String tableName);
 
 }

@@ -65,7 +65,7 @@ public class DefaultAdminCqlOperations implements AdminCqlOperations {
 
 		CreateKeyspaceCqlGenerator generator = new CreateKeyspaceCqlGenerator(spec);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 
 	}
 
@@ -89,7 +89,7 @@ public class DefaultAdminCqlOperations implements AdminCqlOperations {
 
 		AlterKeyspaceCqlGenerator generator = new AlterKeyspaceCqlGenerator(spec);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 
 	}
 
@@ -111,7 +111,7 @@ public class DefaultAdminCqlOperations implements AdminCqlOperations {
 
 		DropKeyspaceCqlGenerator generator = new DropKeyspaceCqlGenerator(spec);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 
 	}
 
@@ -133,7 +133,7 @@ public class DefaultAdminCqlOperations implements AdminCqlOperations {
 
 		UseKeyspaceCqlGenerator generator = new UseKeyspaceCqlGenerator(spec);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 
 	}
 
@@ -143,7 +143,7 @@ public class DefaultAdminCqlOperations implements AdminCqlOperations {
 		UseKeyspaceSpecification spec = new UseKeyspaceSpecification().name(SYSTEM_KEYSPACE);
 		UseKeyspaceCqlGenerator generator = new UseKeyspaceCqlGenerator(spec);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 
 	}
 

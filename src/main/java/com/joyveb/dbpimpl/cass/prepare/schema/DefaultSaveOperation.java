@@ -17,43 +17,67 @@ package com.joyveb.dbpimpl.cass.prepare.schema;
 
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Update;
 import com.joyveb.dbpimpl.cass.prepare.convert.CassandraConverter;
 
 /**
- * Implementation for SaveOperation
+ * Implementation for SaveNewOperation
  * 
  * @author Alex Shvid
  * 
  */
 
-public class DefaultUpdateOperation<T> extends
-		AbstractUpdateOperation<UpdateOperation> implements UpdateOperation {
-
-	private String tablename;
+public class DefaultSaveOperation<T> extends AbstractSaveOperation<T, SaveOperation> implements SaveOperation {
+	
 	private CassandraConverter cassandraConverter;
-	private T entity;
 
-	public DefaultUpdateOperation(Session session,
-			CassandraConverter cassandraConverter, String tablename, T entity) {
-		super(session);
-		this.tablename = tablename;
+	public DefaultSaveOperation(Session session, CassandraConverter cassandraConverter,
+			String tablename, T entity,boolean ifNotExists) {
+		super(session, tablename, entity,ifNotExists);
 		this.cassandraConverter = cassandraConverter;
-		this.entity = entity;
 	}
+
 
 	@Override
 	public RegularStatement createStatement() {
-		Update query = QueryBuilder.update(tablename);
+
+		Insert query = QueryBuilder.insertInto(getTableName());
+		
+		if(isIfNotExists()){
+			query.ifNotExists();
+		}
+
 		cassandraConverter.write(entity, query);
+		/*
+		 * Add Ttl and Timestamp to Insert query
+		 */
+		if (getTtl() != null) {
+			query.using(QueryBuilder.ttl(getTtl()));
+		}
+		if (getTimestamp() != null) {
+			query.using(QueryBuilder.timestamp(getTimestamp()));
+		}
+
 		return query;
+	}
+	
+	@Override
+	public SaveOperation toTable(String tableName) {
+		setTableName(tableName);
+		return this;
 	}
 
 	@Override
-	public void setTableName(String tableName) {
-		// TODO Auto-generated method stub
-		this.tablename = tableName;
+	public SaveOperation withTimeToLive(int ttlSeconds) {
+		setTtl(ttlSeconds);
+		return this;
+	}
+
+	@Override
+	public SaveOperation withTimestamp(long timestampMls) {
+		setTimestamp(timestampMls);
+		return this;
 	}
 
 }

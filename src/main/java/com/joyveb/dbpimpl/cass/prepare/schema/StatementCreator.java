@@ -15,23 +15,23 @@
  */
 package com.joyveb.dbpimpl.cass.prepare.schema;
 
-import com.datastax.driver.core.Query;
+import com.datastax.driver.core.RegularStatement;
 
 /**
- * Base interface to create query
+ * Base interface to create Statement
  * 
  * @author Alex Shvid
  * 
  */
 
-public interface QueryCreator {
+public interface StatementCreator {
 
 	/**
-	 * This function returns Query object
+	 * This function returns Statement object
 	 * 
 	 * @return
 	 */
 
-	Query createQuery();
+	RegularStatement createStatement();
 
 }

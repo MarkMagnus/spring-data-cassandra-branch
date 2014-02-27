@@ -16,27 +16,29 @@
 package com.joyveb.dbpimpl.cass.prepare.schema;
 
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 
 /**
+ * Base interface for delete operations
  * 
  * @author Alex Shvid
  * 
- * @param <O> Operation type
  */
-public abstract class AbstractUpdateOperation<O extends QueryOperation<ResultSet, O>> extends
-		AbstractQueryOperation<ResultSet, O> implements StatementCreator, BatchedStatementCreator {
+public interface DeleteOperation extends QueryOperation<ResultSet, DeleteOperation> {
 
-	protected AbstractUpdateOperation(Session session) {
-		super(session);
-	}
+	/**
+	 * Specifies table differ from entitie's table to delete
+	 * 
+	 * @param tableName table is using for deleting entity
+	 * @return this
+	 */
+	DeleteOperation fromTable(String tableName);
 
-	@Override
-	public ResultSet execute() {
-		Statement query = doCreateStatement(this);
-		return doExecute(query);
-	}
-
+	/**
+	 * Specifies Timestamp (cell's timestamp in the Cassandra) in milliseconds for the deleting entity
+	 * 
+	 * @param timestamp Timestamp in milliseconds
+	 * @return this
+	 */
+	DeleteOperation withTimestamp(long timestampMls);
 
 }

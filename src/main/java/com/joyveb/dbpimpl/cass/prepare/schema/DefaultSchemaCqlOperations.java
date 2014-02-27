@@ -93,7 +93,7 @@ public class DefaultSchemaCqlOperations implements SchemaCqlOperations {
 
 		CreateTableCqlGenerator generator = new CreateTableCqlGenerator(createTableSpecification);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 	}
 
 	@Override
@@ -130,7 +130,7 @@ public class DefaultSchemaCqlOperations implements SchemaCqlOperations {
 
 		AlterTableCqlGenerator generator = new AlterTableCqlGenerator(alterTableSpecification);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 	}
 
 	@Override
@@ -148,7 +148,7 @@ public class DefaultSchemaCqlOperations implements SchemaCqlOperations {
 
 		DropTableCqlGenerator generator = new DropTableCqlGenerator(dropTableSpecification);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 	}
 
 	@Override
@@ -176,7 +176,7 @@ public class DefaultSchemaCqlOperations implements SchemaCqlOperations {
 
 		CreateIndexCqlGenerator generator = new CreateIndexCqlGenerator(createIndexSpecification);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 	}
 
 	@Override
@@ -204,7 +204,7 @@ public class DefaultSchemaCqlOperations implements SchemaCqlOperations {
 
 		DropIndexCqlGenerator generator = new DropIndexCqlGenerator(dropIndexSpecification);
 
-		return new DefaultUpdateOperation(session, generator.toCql());
+		return new DefaultSchemaUpdateOperation(session, generator.toCql());
 	}
 
 }

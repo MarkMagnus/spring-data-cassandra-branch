@@ -15,28 +15,21 @@
  */
 package com.joyveb.dbpimpl.cass.prepare.schema;
 
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 
 /**
+ * Base interface to get entity (actually select).
  * 
  * @author Alex Shvid
  * 
- * @param <O> Operation type
  */
-public abstract class AbstractUpdateOperation<O extends QueryOperation<ResultSet, O>> extends
-		AbstractQueryOperation<ResultSet, O> implements StatementCreator, BatchedStatementCreator {
+public interface GetOperation<T> extends QueryOperation<T, GetOperation<T>> {
 
-	protected AbstractUpdateOperation(Session session) {
-		super(session);
-	}
-
-	@Override
-	public ResultSet execute() {
-		Statement query = doCreateStatement(this);
-		return doExecute(query);
-	}
-
+	/**
+	 * Specifies table differ from entitie's table
+	 * 
+	 * @param tableName table name to override entities table
+	 * @return this
+	 */
+	GetOperation<T> formTable(String tableName);
 
 }

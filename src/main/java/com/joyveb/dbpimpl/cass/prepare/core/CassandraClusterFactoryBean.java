@@ -139,6 +139,7 @@ public class CassandraClusterFactoryBean implements FactoryBean<Cluster>, Initia
 
 		// initialize property
 		this.cluster = cluster;
+		cluster.connect();
 	}
 
 	@Override

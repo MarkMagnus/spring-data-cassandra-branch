@@ -18,9 +18,9 @@ package com.joyveb.dbpimpl.cass.prepare.schema;
 import java.util.Iterator;
 import java.util.List;
 
-import com.datastax.driver.core.Query;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 
 /**
  * Default Ingest operation implementation
@@ -32,9 +32,9 @@ import com.datastax.driver.core.Session;
 public class DefaultIngestOperation extends AbstractQueryOperation<List<ResultSet>, IngestOperation> implements
 		IngestOperation {
 
-	private final Iterator<Query> queryIterator;
+	private final Iterator<Statement> queryIterator;
 
-	public DefaultIngestOperation(Session session, Iterator<Query> iterator) {
+	public DefaultIngestOperation(Session session, Iterator<Statement> iterator) {
 		super(session);
 		this.queryIterator = iterator;
 	}

@@ -15,28 +15,28 @@
  */
 package com.joyveb.dbpimpl.cass.prepare.schema;
 
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.RegularStatement;
 
 /**
+ * Batched Statement Creator interface to create Statements that are using in Batch operations.
  * 
  * @author Alex Shvid
  * 
- * @param <O> Operation type
  */
-public abstract class AbstractUpdateOperation<O extends QueryOperation<ResultSet, O>> extends
-		AbstractQueryOperation<ResultSet, O> implements StatementCreator, BatchedStatementCreator {
+public interface BatchedStatementCreator {
 
-	protected AbstractUpdateOperation(Session session) {
-		super(session);
-	}
+	/**
+	 * This function returns Statement object
+	 * 
+	 * @return
+	 */
+	RegularStatement createStatement();
 
-	@Override
-	public ResultSet execute() {
-		Statement query = doCreateStatement(this);
-		return doExecute(query);
-	}
-
+	/**
+	 * Defines specific table name for Statement creator
+	 * 
+	 * @param tableName - override table name
+	 */
+	void setTableName(String tableName);
 
 }
